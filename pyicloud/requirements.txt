@@ -1,0 +1,6 @@
+requests>=1.2
+six>=1.9.0
+tzlocal
+pytz
+certifi
+future
