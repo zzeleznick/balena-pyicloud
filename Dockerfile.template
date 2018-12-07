@@ -17,11 +17,11 @@ COPY ./requirements.txt /requirements.txt
 # pip install python deps from requirements.txt on the resin.io build server
 RUN pip install -r /requirements.txt
 
-# Install local package
-RUN pip install -e ./pyicloud
-
 # This will copy all files in our root to the working  directory in the container
 COPY . ./
+
+# Install local package
+RUN pip install -e ./pyicloud
 
 # switch on systemd init system in container
 ENV INITSYSTEM on
