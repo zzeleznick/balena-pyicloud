@@ -1,5 +1,7 @@
 import backoff
 import logging
+import logging.handlers
+# import sys
 import os
 
 from datetime import datetime
@@ -14,11 +16,21 @@ from pyicloud.exceptions import (
     PyiCloudServiceNotActivatedErrror
 )
 
+formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
+rot_handler = logging.handlers.RotatingFileHandler(
+    'app.log',
+    maxBytes=1024 * 1024)
+rot_handler.setLevel(logging.INFO)
+rot_handler.setFormatter(formatter)
+
 backoff_logger = logging.getLogger('backoff')
 backoff_logger.addHandler(default_handler)
+backoff_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 logger.addHandler(default_handler)
+logger.addHandler(rot_handler)
 
 EMAIL = os.environ["APP_EMAIL"]
 PW = os.environ["APPLE_PW"]
@@ -119,14 +131,17 @@ def td_format(td_object):
     return ", ".join(strings)
 
 
-def fetch_address(api):
+def fetch_address(api, idx=0):
     res = {}
     loc = fetch_location(api)
     if not loc:
         res["error"] = "Failed: No location"
         return res
-    # Just care about the first one
-    loc = loc[0].get('location', {})
+    if idx < 0 or idx >= len(loc):
+        res["error"] = "Failed: Index ({}) out of range ({})".format(
+            idx, len(loc))
+        return res
+    loc = loc[idx].get('location', {})
     lines = loc.get('address', {}).get('formattedAddressLines', [])
     if not lines:
         logger.info("Missing data in {}".format(loc))
@@ -143,6 +158,13 @@ def fetch_address(api):
         res["last_updated"] = td_format(now - then)
 
     return res
+
+
+def test_logger():
+    logger.debug("Hello debug")
+    logger.info("Hello info")
+    logger.warning("Hello warning")
+
 
 if __name__ == '__main__':
     api = create_api()
