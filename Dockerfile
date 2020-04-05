@@ -7,10 +7,11 @@ FROM balenalib/raspberry-pi-python:3-stretch-run
 # RUN install_packages git
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libffi-dev openssl-dev python3-dev \
+    && apt-get install -y --no-install-recommends gcc libffi-dev libssl-dev libpython3-dev \
     && rm -rf /var/lib/apt/lists/* \
+    && pip install --upgrade --force-reinstall --ignore-installed pip \
     && pip install cryptography \
-    && apt-get purge -y --auto-remove gcc libffi-dev openssl-dev python3-dev
+    && apt-get purge -y --auto-remove gcc libffi-dev libssl-dev libpython3-dev
 
 # Set our working directory
 WORKDIR /usr/src/app
