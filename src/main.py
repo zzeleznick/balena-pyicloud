@@ -11,17 +11,17 @@ from api import (
     create_api,
     fetch_address,
     fetch_device,
+    ICloudAPI,
 )
 
-version = os.environ.get("APP_VERSION", "v0")
+_version = os.environ.get("APP_VERSION", "v0")
 port = os.environ.get("PORT", 80)
 debug = os.environ.get("DEBUG", False)
 
 app = Flask(__name__)
-api = None
 
 
-@app.route("/loc", defaults={"idx": 0})
+@app.route("/loc", defaults={"idx": 1})
 @app.route("/loc/<idx>")
 def locate(idx):
     app.logger.info("locate called for idx %s", idx)
@@ -29,10 +29,13 @@ def locate(idx):
         idx = int(idx)
     except ValueError:
         return "Bad Request", 400
-    global api
-    if not api:
-        api = create_api()
-    d = fetch_address(api, idx)
+    d = fetch_address(idx)
+    return jsonify(d)
+
+
+@app.route("/locations")
+def locations():
+    d = fetch_address(0)
     return jsonify(d)
 
 
@@ -48,8 +51,13 @@ def device():
 def now():
     logger.info("now called")
     app.logger.warning("now called")
-    d = {"now": time.time(), "version": version}
+    d = {"now": time.time(), "version": _version}
     return jsonify(d)
+
+
+@app.route("/version")
+def version():
+    return _version
 
 
 @app.route("/")

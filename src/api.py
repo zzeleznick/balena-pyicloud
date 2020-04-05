@@ -78,44 +78,70 @@ def reauth(api):
     return api.authenticate()
 
 
-def fetch_device(api):
-    def _fetch():
-        try:
-            return api.iphone
-        except PyiCloudAPIResponseError as e:
-            logger.error("Failed to fetch: {}".format(e), exc_info=True)
-            reauth(api)
+class ICloudAPI(object):
+    api = None
 
-    device = None
-    for i in range(3):
-        logger.info("({}) Calling fetch_device".format(i))
-        device = _fetch()
-        if device:
-            break
-        logger.error("({}) Failed to fetch_device".format(i))
-    else:
-        logger.error("({}) No more retries".format(i))
-    return device
+    @classmethod
+    def init(cls):
+        logger.info("init called for ICloudAPI: {}".format(cls.api))
+        if cls.api:
+            return
+        cls.api = create_api()
 
+    @classmethod
+    def reauth(cls):
+        logger.info("reauth called for ICloudAPI")
+        reauth(cls.api)
 
-def fetch_location(api):
-    def _fetch():
-        try:
-            return api.friends.locations
-        except PyiCloudAPIResponseError as e:
-            logger.error("Failed to fetch: {}".format(e), exc_info=True)
-            reauth(api)
+    @classmethod
+    def fetch_device(cls, retries=3):
+        cls.init()
 
-    loc = None
-    for i in range(3):
-        logger.info("({}) Fetching location".format(i))
-        loc = _fetch()
-        if loc:
-            break
-        logger.error("({}) Failed to fetch location".format(i))
-    else:
-        logger.error("({}) No more retries".format(i))
-    return loc
+        def _fetch():
+            try:
+                return cls.api.iphone
+            except PyiCloudAPIResponseError as e:
+                logger.error("Failed to fetch: {}".format(e), exc_info=True)
+            try:
+                cls.reauth()
+            except PyiCloudAPIResponseError as e:
+                logger.error("Failed to reauth: {}".format(e), exc_info=True)
+
+        device = None
+        for i in range(retries):
+            logger.info("({}) Calling fetch_device".format(i))
+            device = _fetch()
+            if device:
+                break
+            logger.error("({}) Failed to fetch_device".format(i))
+        else:
+            logger.error("({}) No more retries".format(i))
+        return device
+
+    @classmethod
+    def fetch_locations(cls, retries=3):
+        cls.init()
+
+        def _fetch():
+            try:
+                return cls.api.friends.locations
+            except PyiCloudAPIResponseError as e:
+                logger.error("Failed to fetch: {}".format(e), exc_info=True)
+            try:
+                cls.reauth()
+            except PyiCloudAPIResponseError as e:
+                logger.error("Failed to reauth: {}".format(e), exc_info=True)
+
+        locations = None
+        for i in range(retries):
+            logger.info("({}) Calling fetch_locations".format(i))
+            locations = _fetch()
+            if locations:
+                break
+            logger.error("({}) Failed to fetch_locations".format(i))
+        else:
+            logger.error("({}) No more retries".format(i))
+        return locations
 
 
 def td_format(td_object):
@@ -139,32 +165,42 @@ def td_format(td_object):
     return ", ".join(strings)
 
 
-def fetch_address(api, idx=0):
+def extact_address(payload={}):
     res = {}
-    loc = fetch_location(api)
-    if not loc:
-        res["error"] = "Failed: No location"
-        return res
-    if idx < 0 or idx >= len(loc):
-        res["error"] = "Failed: Index ({}) out of range ({})".format(idx, len(loc))
-        return res
-    loc = loc[idx].get("location", {})
+    loc = payload.get("location", {})
     lines = loc.get("address", {}).get("formattedAddressLines", [])
     if not lines:
         logger.info("Missing data in {}".format(loc))
         res["error"] = "Failed: Missing location data"
         return res
-
     res["address"] = " ".join(lines)
     ts = loc.get("timestamp")
-    if ts:
-        then = datetime.utcfromtimestamp(ts / 1000)
-        timestamp = then.strftime("%Y-%m-%d %H:%M:%S")
-        res["timestamp"] = timestamp
-        now = datetime.utcnow()
-        res["last_updated"] = td_format(now - then)
-
+    if not ts:
+        return res
+    then = datetime.utcfromtimestamp(ts / 1000)
+    timestamp = then.strftime("%Y-%m-%d %H:%M:%S")
+    res["timestamp"] = timestamp
+    now = datetime.utcnow()
+    res["last_updated"] = td_format(now - then)
     return res
+
+
+def fetch_address(idx=1):
+    res = {}
+    locations = ICloudAPI.fetch_locations()
+    mapped_index = idx - 1  # 0
+    if not locations:
+        res["error"] = "Failed: No location"
+        return res
+    if mapped_index >= len(locations):
+        res["error"] = "Failed: Index ({}) out of range ({})".format(
+            idx, len(locations)
+        )
+        return res
+    if mapped_index < 0:
+        # get all
+        return {i: extact_address(loc) for i, loc in enumerate(locations)}
+    return extact_address(locations[mapped_index])
 
 
 def test_logger():
