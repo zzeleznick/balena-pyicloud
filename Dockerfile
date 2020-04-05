@@ -1,16 +1,16 @@
 # base-image for python on any machine using a template variable,
 # see more about dockerfile templates here: https://www.balena.io/docs/learn/develop/dockerfile/
-FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3-stretch-run
+FROM balenalib/raspberry-pi-python:3-stretch-run
 
 # use `install_packages` if you need to install dependencies,
 # for instance if you need git, just uncomment the line below.
 # RUN install_packages git
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc python-dev \
+    && apt-get install -y --no-install-recommends gcc libffi-dev openssl-dev python3-dev \
     && rm -rf /var/lib/apt/lists/* \
     && pip install cryptography \
-    && apt-get purge -y --auto-remove gcc python-dev
+    && apt-get purge -y --auto-remove gcc libffi-dev openssl-dev python3-dev
 
 # Set our working directory
 WORKDIR /usr/src/app
