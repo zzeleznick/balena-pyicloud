@@ -6,6 +6,12 @@ FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3-stretch-run
 # for instance if you need git, just uncomment the line below.
 # RUN install_packages git
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc and-build-dependencies \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install cryptography \
+    && apt-get purge -y --auto-remove gcc and-build-dependencies
+
 # Set our working directory
 WORKDIR /usr/src/app
 
