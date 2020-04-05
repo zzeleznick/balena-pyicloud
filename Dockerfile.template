@@ -7,10 +7,10 @@ FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3-stretch-run
 # RUN install_packages git
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc and-build-dependencies \
+    && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/* \
     && pip install cryptography \
-    && apt-get purge -y --auto-remove gcc and-build-dependencies
+    && apt-get purge -y --auto-remove gcc
 
 # Set our working directory
 WORKDIR /usr/src/app
