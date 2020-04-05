@@ -8,9 +8,7 @@ from api import (
     logger,
     rot_handler,
     test_logger,
-    create_api,
     fetch_address,
-    fetch_device,
     ICloudAPI,
 )
 
@@ -41,10 +39,7 @@ def locations():
 
 @app.route("/device")
 def device():
-    global api
-    if not api:
-        api = create_api()
-    return str(fetch_device(api))
+    return str(ICloudAPI.fetch_device())
 
 
 @app.route("/now")

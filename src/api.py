@@ -12,9 +12,9 @@ from flask.logging import default_handler
 
 from pyicloud.exceptions import (
     PyiCloudFailedLoginException,
-    PyiCloudAPIResponseError,
-    PyiCloud2SARequiredError,
-    PyiCloudServiceNotActivatedErrror,
+    PyiCloudAPIResponseException,
+    PyiCloud2SARequiredException,
+    PyiCloudServiceNotActivatedException,
 )
 
 formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)s | %(message)s")
@@ -38,8 +38,8 @@ PW = os.environ["APPLE_PW"]
 def fatal_code(e):
     return (
         isinstance(e, PyiCloudFailedLoginException)
-        or isinstance(e, PyiCloud2SARequiredError)
-        or isinstance(e, PyiCloudServiceNotActivatedErrror)
+        or isinstance(e, PyiCloud2SARequiredException)
+        or isinstance(e, PyiCloudServiceNotActivatedException)
     )
 
 
@@ -47,9 +47,9 @@ def fatal_code(e):
     backoff.expo,
     (
         PyiCloudFailedLoginException,
-        PyiCloudAPIResponseError,
-        PyiCloud2SARequiredError,
-        PyiCloudServiceNotActivatedErrror,
+        PyiCloudAPIResponseException,
+        PyiCloud2SARequiredException,
+        PyiCloudServiceNotActivatedException,
     ),
     max_tries=5,
     max_time=300,
@@ -65,9 +65,9 @@ def create_api():
     backoff.expo,
     (
         PyiCloudFailedLoginException,
-        PyiCloudAPIResponseError,
-        PyiCloud2SARequiredError,
-        PyiCloudServiceNotActivatedErrror,
+        PyiCloudAPIResponseException,
+        PyiCloud2SARequiredException,
+        PyiCloudServiceNotActivatedException,
     ),
     max_tries=5,
     max_time=300,
@@ -100,11 +100,11 @@ class ICloudAPI(object):
         def _fetch():
             try:
                 return cls.api.iphone
-            except PyiCloudAPIResponseError as e:
+            except PyiCloudAPIResponseException as e:
                 logger.error("Failed to fetch: {}".format(e), exc_info=True)
             try:
                 cls.reauth()
-            except PyiCloudAPIResponseError as e:
+            except PyiCloudAPIResponseException as e:
                 logger.error("Failed to reauth: {}".format(e), exc_info=True)
 
         device = None
@@ -125,11 +125,11 @@ class ICloudAPI(object):
         def _fetch():
             try:
                 return cls.api.friends.locations
-            except PyiCloudAPIResponseError as e:
+            except PyiCloudAPIResponseException as e:
                 logger.error("Failed to fetch: {}".format(e), exc_info=True)
             try:
                 cls.reauth()
-            except PyiCloudAPIResponseError as e:
+            except PyiCloudAPIResponseException as e:
                 logger.error("Failed to reauth: {}".format(e), exc_info=True)
 
         locations = None
