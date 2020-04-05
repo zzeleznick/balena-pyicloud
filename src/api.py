@@ -1,6 +1,7 @@
 import backoff
 import logging
 import logging.handlers
+
 # import sys
 import os
 
@@ -13,17 +14,15 @@ from pyicloud.exceptions import (
     PyiCloudFailedLoginException,
     PyiCloudAPIResponseError,
     PyiCloud2SARequiredError,
-    PyiCloudServiceNotActivatedErrror
+    PyiCloudServiceNotActivatedErrror,
 )
 
-formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
-rot_handler = logging.handlers.RotatingFileHandler(
-    'app.log',
-    maxBytes=1024 * 1024)
+formatter = logging.Formatter("%(asctime)s | %(name)s | %(levelname)s | %(message)s")
+rot_handler = logging.handlers.RotatingFileHandler("app.log", maxBytes=1024 * 1024)
 rot_handler.setLevel(logging.INFO)
 rot_handler.setFormatter(formatter)
 
-backoff_logger = logging.getLogger('backoff')
+backoff_logger = logging.getLogger("backoff")
 backoff_logger.addHandler(default_handler)
 backoff_logger.setLevel(logging.INFO)
 
@@ -37,37 +36,44 @@ PW = os.environ["APPLE_PW"]
 
 
 def fatal_code(e):
-    return (isinstance(e, PyiCloudFailedLoginException)
-            or isinstance(e, PyiCloud2SARequiredError)
-            or isinstance(e, PyiCloudServiceNotActivatedErrror)
-            )
+    return (
+        isinstance(e, PyiCloudFailedLoginException)
+        or isinstance(e, PyiCloud2SARequiredError)
+        or isinstance(e, PyiCloudServiceNotActivatedErrror)
+    )
 
 
-@backoff.on_exception(backoff.expo,
-                      (PyiCloudFailedLoginException,
-                       PyiCloudAPIResponseError,
-                       PyiCloud2SARequiredError,
-                       PyiCloudServiceNotActivatedErrror
-                       ),
-                      max_tries=5,
-                      max_time=300,
-                      jitter=backoff.full_jitter,
-                      giveup=fatal_code)
+@backoff.on_exception(
+    backoff.expo,
+    (
+        PyiCloudFailedLoginException,
+        PyiCloudAPIResponseError,
+        PyiCloud2SARequiredError,
+        PyiCloudServiceNotActivatedErrror,
+    ),
+    max_tries=5,
+    max_time=300,
+    jitter=backoff.full_jitter,
+    giveup=fatal_code,
+)
 def create_api():
     logger.info("create_api called")
     return PyiCloudService(EMAIL, PW)
 
 
-@backoff.on_exception(backoff.expo,
-                      (PyiCloudFailedLoginException,
-                       PyiCloudAPIResponseError,
-                       PyiCloud2SARequiredError,
-                       PyiCloudServiceNotActivatedErrror
-                       ),
-                      max_tries=5,
-                      max_time=300,
-                      jitter=backoff.full_jitter,
-                      giveup=fatal_code)
+@backoff.on_exception(
+    backoff.expo,
+    (
+        PyiCloudFailedLoginException,
+        PyiCloudAPIResponseError,
+        PyiCloud2SARequiredError,
+        PyiCloudServiceNotActivatedErrror,
+    ),
+    max_tries=5,
+    max_time=300,
+    jitter=backoff.full_jitter,
+    giveup=fatal_code,
+)
 def reauth(api):
     return api.authenticate()
 
@@ -79,6 +85,7 @@ def fetch_device(api):
         except PyiCloudAPIResponseError as e:
             logger.error("Failed to fetch: {}".format(e), exc_info=True)
             reauth(api)
+
     device = None
     for i in range(3):
         logger.info("({}) Calling fetch_device".format(i))
@@ -98,6 +105,7 @@ def fetch_location(api):
         except PyiCloudAPIResponseError as e:
             logger.error("Failed to fetch: {}".format(e), exc_info=True)
             reauth(api)
+
     loc = None
     for i in range(3):
         logger.info("({}) Fetching location".format(i))
@@ -113,19 +121,19 @@ def fetch_location(api):
 def td_format(td_object):
     seconds = int(td_object.total_seconds())
     periods = [
-        ('year',        60*60*24*365),
-        ('month',       60*60*24*30),
-        ('day',         60*60*24),
-        ('hour',        60*60),
-        ('minute',      60),
-        ('second',      1)
+        ("year", 60 * 60 * 24 * 365),
+        ("month", 60 * 60 * 24 * 30),
+        ("day", 60 * 60 * 24),
+        ("hour", 60 * 60),
+        ("minute", 60),
+        ("second", 1),
     ]
 
     strings = []
     for period_name, period_seconds in periods:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
-            has_s = 's' if period_value > 1 else ''
+            has_s = "s" if period_value > 1 else ""
             strings.append("%s %s%s" % (period_value, period_name, has_s))
 
     return ", ".join(strings)
@@ -138,21 +146,20 @@ def fetch_address(api, idx=0):
         res["error"] = "Failed: No location"
         return res
     if idx < 0 or idx >= len(loc):
-        res["error"] = "Failed: Index ({}) out of range ({})".format(
-            idx, len(loc))
+        res["error"] = "Failed: Index ({}) out of range ({})".format(idx, len(loc))
         return res
-    loc = loc[idx].get('location', {})
-    lines = loc.get('address', {}).get('formattedAddressLines', [])
+    loc = loc[idx].get("location", {})
+    lines = loc.get("address", {}).get("formattedAddressLines", [])
     if not lines:
         logger.info("Missing data in {}".format(loc))
         res["error"] = "Failed: Missing location data"
         return res
 
     res["address"] = " ".join(lines)
-    ts = loc.get('timestamp')
+    ts = loc.get("timestamp")
     if ts:
         then = datetime.utcfromtimestamp(ts / 1000)
-        timestamp = then.strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = then.strftime("%Y-%m-%d %H:%M:%S")
         res["timestamp"] = timestamp
         now = datetime.utcnow()
         res["last_updated"] = td_format(now - then)
@@ -166,6 +173,6 @@ def test_logger():
     logger.warning("Hello warning")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     api = create_api()
     print(fetch_address(api))
