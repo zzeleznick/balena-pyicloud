@@ -168,19 +168,23 @@ def td_format(td_object):
 def extact_address(payload={}):
     res = {}
     loc = payload.get("location", {})
+    res.update(
+        {"latitude": loc.get("latitude"), "longitude": loc.get("longitude"),}
+    )
+    ts = loc.get("timestamp")
     lines = loc.get("address", {}).get("formattedAddressLines", [])
     if not lines:
-        logger.info("Missing data in {}".format(loc))
+        logger.info("Missing data in location: {}".format(loc))
         res["error"] = "Failed: Missing location data"
         return res
     res["address"] = " ".join(lines)
-    ts = loc.get("timestamp")
     if not ts:
         return res
     then = datetime.utcfromtimestamp(ts / 1000)
     timestamp = then.strftime("%Y-%m-%d %H:%M:%S")
-    res["timestamp"] = timestamp
     now = datetime.utcnow()
+    res["timestamp"] = ts
+    res["timestamp_str"] = timestamp
     res["last_updated"] = td_format(now - then)
     return res
 
