@@ -2,10 +2,7 @@ import time
 import os
 import logging
 
-from flask import (
-    Flask,
-    jsonify
-)
+from flask import Flask, jsonify
 
 from api import (
     logger,
@@ -13,7 +10,7 @@ from api import (
     test_logger,
     create_api,
     fetch_address,
-    fetch_device
+    fetch_device,
 )
 
 version = os.environ.get("APP_VERSION", "v0")
@@ -24,10 +21,10 @@ app = Flask(__name__)
 api = None
 
 
-@app.route('/loc', defaults={'idx': 0})
-@app.route('/loc/<idx>')
+@app.route("/loc", defaults={"idx": 0})
+@app.route("/loc/<idx>")
 def locate(idx):
-    app.logger.info('locate called for idx %s', idx)
+    app.logger.info("locate called for idx %s", idx)
     try:
         idx = int(idx)
     except ValueError:
@@ -49,12 +46,9 @@ def device():
 
 @app.route("/now")
 def now():
-    logger.info('now called')
-    app.logger.warning('now called')
-    d = {
-        "now": time.time(),
-        "version": version
-    }
+    logger.info("now called")
+    app.logger.warning("now called")
+    d = {"now": time.time(), "version": version}
     return jsonify(d)
 
 
@@ -65,14 +59,14 @@ def hello():
 
 @app.route("/test")
 def test():
-    logger.info('test called')
-    app.logger.warning('test called')
+    logger.info("test called")
+    app.logger.warning("test called")
     test_logger()
     return "Success"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.logger.addHandler(rot_handler)
     app.logger.setLevel(logging.DEBUG)
-    app.logger.info('App launching on port %s', port)
-    app.run(host='0.0.0.0', debug=debug, port=port)
+    app.logger.info("App launching on port %s", port)
+    app.run(host="0.0.0.0", debug=debug, port=port)
